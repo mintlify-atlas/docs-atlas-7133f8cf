@@ -1,0 +1,69 @@
+{
+  "projectType": "frontend",
+  "projectName": "Sortvis",
+  "projectDescription": "Interactive visualization tool for understanding sorting algorithms",
+  "theme": "palm",
+  "primaryColor": "#8B5CF6",
+  "lightColor": "#A78BFA",
+  "darkColor": "#7C3AED",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Get Started",
+        "pages": [
+          "introduction",
+          "quickstart"
+        ]
+      },
+      {
+        "group": "Algorithms",
+        "pages": [
+          "algorithms/overview",
+          "algorithms/bubble-sort",
+          "algorithms/quick-sort",
+          "algorithms/merge-sort",
+          "algorithms/heap-sort",
+          "algorithms/insertion-sort",
+          "algorithms/selection-sort"
+        ]
+      },
+      {
+        "group": "Guides",
+        "pages": [
+          "guides/understanding-visualization",
+          "guides/controls",
+          "guides/performance"
+        ]
+      },
+      {
+        "group": "Development",
+        "pages": [
+          "development/architecture",
+          "development/contributing"
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Interactive visualization of 6 sorting algorithms",
+    "Real-time statistics tracking (comparisons, swaps)",
+    "Adjustable speed and array size controls",
+    "Color-coded bar states for clear visual feedback",
+    "Responsive design for desktop and mobile"
+  ],
+  "publicApiSurface": [
+    "bubbleSort(arr: Uint8Array): Generator<SortStep>",
+    "quickSort(arr: Uint8Array): Generator<SortStep>",
+    "mergeSort(arr: Uint8Array): Generator<SortStep>",
+    "heapSort(arr: Uint8Array): Generator<SortStep>",
+    "insertionSort(arr: Uint8Array): Generator<SortStep>",
+    "selectionSort(arr: Uint8Array): Generator<SortStep>",
+    "VisualizerState.play()",
+    "VisualizerState.pause()",
+    "VisualizerState.reset()",
+    "VisualizerState.generateArray()",
+    "VisualizerState.setAlgorithm(id: AlgorithmId)",
+    "VisualizerState.setSize(newSize: number)",
+    "VisualizerState.setSpeed(newSpeed: SpeedLevel)"
+  ]
+}

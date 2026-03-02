@@ -1,0 +1,94 @@
+---
+title: Sorting algorithms
+description: Interactive visualizations of six classic sorting algorithms with real-time step tracking
+---
+
+Sortvis provides interactive visualizations for six fundamental sorting algorithms. Each algorithm is implemented as a TypeScript generator function that yields visualization steps, allowing you to see exactly how the algorithm works in real-time.
+
+## Available algorithms
+
+<CardGroup cols={2}>
+  <Card title="Bubble sort" icon="arrow-up" href="/algorithms/bubble-sort">
+    Repeatedly compares and swaps adjacent elements until sorted.
+    
+    **Time:** O(n) to O(n²) · **Space:** O(1) · **Stable**
+  </Card>
+  
+  <Card title="Quick sort" icon="bolt" href="/algorithms/quick-sort">
+    Partitions by a pivot and recursively sorts the parts.
+    
+    **Time:** O(n log n) to O(n²) · **Space:** O(log n)
+  </Card>
+  
+  <Card title="Merge sort" icon="code-merge" href="/algorithms/merge-sort">
+    Recursively splits the array, then merges sorted halves.
+    
+    **Time:** O(n log n) · **Space:** O(n) · **Stable**
+  </Card>
+  
+  <Card title="Heap sort" icon="layer-group" href="/algorithms/heap-sort">
+    Builds a heap and repeatedly moves the max to the end.
+    
+    **Time:** O(n log n) · **Space:** O(1)
+  </Card>
+  
+  <Card title="Insertion sort" icon="arrow-right-to-bracket" href="/algorithms/insertion-sort">
+    Builds a sorted portion by inserting each element into place.
+    
+    **Time:** O(n) to O(n²) · **Space:** O(1) · **Stable**
+  </Card>
+  
+  <Card title="Selection sort" icon="hand-pointer" href="/algorithms/selection-sort">
+    Repeatedly selects the smallest unsorted element and places it in order.
+    
+    **Time:** O(n²) · **Space:** O(1)
+  </Card>
+</CardGroup>
+
+## Complexity comparison
+
+| Algorithm | Best case | Worst case | Space | Stable |
+|-----------|-----------|------------|-------|--------|
+| Bubble sort | O(n) | O(n²) | O(1) | Yes |
+| Quick sort | O(n log n) | O(n²) | O(log n) | No |
+| Merge sort | O(n log n) | O(n log n) | O(n) | Yes |
+| Heap sort | O(n log n) | O(n log n) | O(1) | No |
+| Insertion sort | O(n) | O(n²) | O(1) | Yes |
+| Selection sort | O(n²) | O(n²) | O(1) | No |
+
+## Visualization steps
+
+Each algorithm implementation yields typed steps that drive the visualization:
+
+```typescript
+type SortStep =
+  | { type: 'compare'; indices: [number, number] }
+  | { type: 'swap'; indices: [number, number] }
+  | { type: 'pivot'; indices: [number] }
+  | { type: 'sorted'; indices: number[] }
+  | { type: 'merge'; indices: [number]; value: number };
+```
+
+- **compare** - Highlight two elements being compared
+- **swap** - Exchange two elements
+- **pivot** - Mark an element as the pivot (quick sort)
+- **sorted** - Mark elements as in their final position
+- **merge** - Write a value during the merge phase (merge sort)
+
+## Algorithm metadata
+
+Each algorithm includes comprehensive metadata defined in `src/lib/config/algorithms.ts`:
+
+```typescript
+interface AlgorithmInfo {
+  id: AlgorithmId;
+  name: string;
+  minTimeComplexity: string;
+  maxTimeComplexity: string;
+  spaceComplexity: string;
+  stable: boolean;
+  description: string;
+}
+```
+
+This metadata powers the UI display and helps users understand the performance characteristics of each algorithm.

@@ -1,0 +1,179 @@
+---
+title: Merge sort
+description: Stable divide-and-conquer algorithm with guaranteed O(n log n) performance
+---
+
+Merge sort is a divide-and-conquer algorithm that divides the array into smaller sub-arrays, recursively sorts them, and then merges the sorted halves back together. It guarantees O(n log n) time complexity in all cases.
+
+## How it works
+
+1. **Divide** - Split the array into two halves
+2. **Conquer** - Recursively sort each half
+3. **Merge** - Combine the two sorted halves into a single sorted array
+4. **Optimize** - Skip merging if the halves are already in order
+
+<Note>
+  Merge sort is the algorithm of choice when stability is required or when guaranteed O(n log n) performance is needed, regardless of input data.
+</Note>
+
+## Complexity
+
+<CardGroup cols={3}>
+  <Card title="Best case" icon="gauge-high">
+    **O(n log n)**
+    
+    Guaranteed performance
+  </Card>
+  
+  <Card title="Worst case" icon="gauge-low">
+    **O(n log n)**
+    
+    Same as best case
+  </Card>
+  
+  <Card title="Space" icon="memory">
+    **O(n)**
+    
+    Requires auxiliary buffer
+  </Card>
+</CardGroup>
+
+**Stability:** Yes - equal elements maintain their relative order
+
+## Implementation
+
+The implementation consists of three key functions:
+
+### Main function
+```typescript
+export function* mergeSort(arr: Uint8Array): Generator<SortStep, void, undefined> {
+  yield* mergeSortHelper(arr, new Uint8Array(arr.length), 0, arr.length - 1);
+  for (let i = 0; i < arr.length; i++) yield { type: 'sorted', indices: [i] };
+}
+```
+
+### Recursive helper
+```typescript
+function* mergeSortHelper(
+  arr: Uint8Array,
+  buf: Uint8Array,
+  left: number,
+  right: number
+): Generator<SortStep, void, undefined> {
+  if (left >= right) return;
+
+  const mid = (left + right) >> 1;
+  yield* mergeSortHelper(arr, buf, left, mid);
+  yield* mergeSortHelper(arr, buf, mid + 1, right);
+
+  if (arr[mid]! <= arr[mid + 1]!) return;
+
+  yield* merge(arr, buf, left, mid, right);
+}
+```
+
+### Merge function
+```typescript
+function* merge(
+  arr: Uint8Array,
+  buf: Uint8Array,
+  left: number,
+  mid: number,
+  right: number
+): Generator<SortStep, void, undefined> {
+  for (let i = left; i <= right; i++) buf[i] = arr[i]!;
+
+  let i = left,
+    j = mid + 1,
+    k = left;
+
+  while (i <= mid && j <= right) {
+    yield { type: 'compare', indices: [i, j] };
+
+    if (buf[i]! <= buf[j]!) {
+      arr[k] = buf[i++]!;
+    } else {
+      arr[k] = buf[j++]!;
+    }
+
+    yield { type: 'merge', indices: [k], value: arr[k]! };
+    k++;
+  }
+
+  while (i <= mid) {
+    arr[k] = buf[i++]!;
+    yield { type: 'merge', indices: [k], value: arr[k]! };
+    k++;
+  }
+
+  while (j <= right) {
+    arr[k] = buf[j++]!;
+    yield { type: 'merge', indices: [k], value: arr[k]! };
+    k++;
+  }
+}
+```
+
+## Visualization steps
+
+Merge sort uses three types of visualization steps:
+
+### Compare
+```typescript
+{ type: 'compare', indices: [i, j] }
+```
+Compares elements from the two halves being merged.
+
+### Merge
+```typescript
+{ type: 'merge', indices: [k], value: arr[k]! }
+```
+Writes a value to the array during the merge phase. This step is unique to merge sort and includes the value being written so the UI can display it.
+
+### Sorted
+```typescript
+{ type: 'sorted', indices: [i] }
+```
+Marks all elements as sorted after the algorithm completes.
+
+## Key features
+
+<AccordionGroup>
+  <Accordion title="Guaranteed performance">
+    Unlike quick sort, merge sort always runs in O(n log n) time, regardless of the input data. This makes it predictable and reliable for worst-case scenarios.
+  </Accordion>
+  
+  <Accordion title="Stability">
+    Merge sort is stable because when merging, elements from the left half are chosen when equal (`buf[i]! <= buf[j]!`). This preserves the relative order of equal elements.
+  </Accordion>
+  
+  <Accordion title="Early termination optimization">
+    Before merging, the algorithm checks if `arr[mid] <= arr[mid + 1]`. If true, the two halves are already in order and merging can be skipped entirely.
+  </Accordion>
+  
+  <Accordion title="Auxiliary buffer">
+    The implementation uses a single auxiliary buffer `buf` that's allocated once and reused throughout recursion. This is more efficient than allocating new arrays for each merge operation.
+  </Accordion>
+  
+  <Accordion title="Bit shift optimization">
+    The midpoint calculation uses `(left + right) >> 1` instead of `Math.floor((left + right) / 2)`. Bit shifting is faster than division.
+  </Accordion>
+</AccordionGroup>
+
+## When to use
+
+<Check>
+  Merge sort is excellent for:
+  - When stability is required
+  - When guaranteed O(n log n) performance is needed
+  - Sorting linked lists (can be done in O(1) space)
+  - External sorting (data doesn't fit in memory)
+  - Parallel sorting (divide-and-conquer naturally parallelizes)
+</Check>
+
+<Warning>
+  Consider alternatives when:
+  - Space is constrained (O(n) extra space required)
+  - Working with small arrays (insertion sort is faster)
+  - In-place sorting is required (use heap sort or quick sort)
+</Warning>

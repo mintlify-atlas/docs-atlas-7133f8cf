@@ -1,0 +1,199 @@
+---
+title: Understanding the visualization
+description: Learn how to interpret the color-coded bars, sort steps, and statistics in Sortvis
+---
+
+Sortvis uses a color-coded bar chart to visualize sorting algorithms in real-time. Each bar represents an element in the array, and colors indicate the current operation being performed on that element.
+
+## Color-coded bar states
+
+The visualization uses six distinct colors to represent different states during the sorting process:
+
+<Steps>
+  <Step title="Default (Idle)">
+    Gray bars indicate elements that are not currently being processed. This is the initial state for all bars before sorting begins.
+  </Step>
+  
+  <Step title="Comparing">
+    When the algorithm compares two elements, both bars are highlighted in the comparing color. This helps you understand which elements are being evaluated against each other.
+  </Step>
+  
+  <Step title="Swapping">
+    When two elements exchange positions, they're briefly shown in the swapping color. This visual feedback makes it easy to track element movements.
+  </Step>
+  
+  <Step title="Sorted">
+    Once an element reaches its final sorted position, it changes to the sorted color. These bars remain highlighted throughout the rest of the sorting process.
+  </Step>
+  
+  <Step title="Pivot">
+    For algorithms like Quick Sort, the pivot element is highlighted with a special color to show which element is being used to partition the array.
+  </Step>
+  
+  <Step title="Merge">
+    During Merge Sort, bars in the merge color indicate elements being written from auxiliary arrays back into the main array.
+  </Step>
+</Steps>
+
+<Note>
+  The legend at the top of the visualization dynamically adjusts based on the selected algorithm. For example, the "Pivot" indicator only appears when Quick Sort is selected, and "Merge" appears only for Merge Sort.
+</Note>
+
+## Bar state implementation
+
+The color states are defined as TypeScript types in the codebase:
+
+```typescript src/lib/types/visualizer.ts
+export type BarState = 'default' | 'comparing' | 'swapping' | 'sorted' | 'pivot' | 'merge';
+
+export const BAR_STATE_ID: Record<BarState, number> = {
+  default: 0,
+  comparing: 1,
+  swapping: 2,
+  sorted: 3,
+  pivot: 4,
+  merge: 5
+};
+```
+
+Each state is mapped to an integer (0-5) for efficient storage in a `Uint8Array` color buffer, enabling fast lookups and minimal memory usage.
+
+## Sort step types
+
+Every action in the visualization is represented by a `SortStep` object. The algorithm generators yield these steps to communicate what's happening:
+
+```typescript src/lib/types/algorithm.ts
+export type SortStep =
+  | { type: 'compare'; indices: [number, number] }
+  | { type: 'swap'; indices: [number, number] }
+  | { type: 'pivot'; indices: [number] }
+  | { type: 'sorted'; indices: number[] }
+  | { type: 'merge'; indices: [number]; value: number };
+```
+
+### Step type descriptions
+
+<CardGroup cols={2}>
+  <Card title="Compare" icon="arrows-left-right">
+    Indicates that two elements at the given indices are being compared. The `comparisons` counter increments by 1.
+  </Card>
+  
+  <Card title="Swap" icon="arrow-right-arrow-left">
+    Two elements exchange positions. Both the bars and their color states are swapped, and the `swaps` counter increments.
+  </Card>
+  
+  <Card title="Pivot" icon="location-dot">
+    Marks an element as a pivot (used in Quick Sort and Heap Sort). The bar is highlighted but not moved.
+  </Card>
+  
+  <Card title="Sorted" icon="check">
+    Marks one or more elements as being in their final sorted position. These elements won't change state again.
+  </Card>
+  
+  <Card title="Merge" icon="code-merge">
+    Writes a value to a specific index during merge operations. Unlike swap, this overwrites the existing value with a new one from an auxiliary array.
+  </Card>
+</CardGroup>
+
+## How the visualizer processes steps
+
+The `VisualizerState` class processes each step in its `step()` method:
+
+```typescript src/lib/store/visualizer.svelte.ts:185-236
+private step(): boolean {
+  if (!this.generator) return false;
+
+  const result = this.generator.next();
+
+  if (result.done) {
+    this.#status = 'finished';
+    this.stats = { comparisons: this._comparisons, swaps: this._swaps };
+    this.dirtyIndices.clear();
+    this.tick++;
+    return false;
+  }
+
+  // Restore previous colors for bars that are no longer in special states
+  for (const [index, prevState] of this.dirtyIndices) {
+    if (this.colors[index] !== BAR_STATE_ID.sorted) this.colors[index] = prevState;
+  }
+  this.dirtyIndices.clear();
+
+  const { type, indices } = result.value;
+
+  switch (type) {
+    case 'compare':
+      this.setColor(indices[0], 'comparing');
+      this.setColor(indices[1], 'comparing');
+      this._comparisons++;
+      break;
+    case 'swap':
+      [this.colors[indices[0]], this.colors[indices[1]]] = [
+        this.colors[indices[1]]!,
+        this.colors[indices[0]]!
+      ];
+      this.setColor(indices[0], 'swapping');
+      this.setColor(indices[1], 'swapping');
+      this._swaps++;
+      break;
+    case 'pivot':
+      this.setColor(indices[0], 'pivot');
+      break;
+    case 'sorted':
+      for (const idx of indices) {
+        this.colors[idx] = BAR_STATE_ID.sorted;
+        this.dirtyIndices.delete(idx);
+      }
+      break;
+    case 'merge':
+      this.setColor(indices[0], 'merge');
+      this.array[indices[0]] = result.value.value;
+      this._swaps++;
+      break;
+  }
+
+  return true;
+}
+```
+
+<Info>
+  The visualizer uses a "dirty indices" map to track which bars had their colors changed during a step. This allows the system to restore bars to their previous state (usually "default") after highlighting them for an operation.
+</Info>
+
+## Statistics tracking
+
+Sortvis tracks two key metrics throughout the sorting process:
+
+### Comparisons
+
+The number of times two elements are compared. This counter increments for every `compare` step.
+
+### Swaps
+
+The number of array writes performed. This includes both traditional swaps (exchanging two elements) and merge operations (writing a value from an auxiliary array).
+
+```typescript src/lib/types/algorithm.ts:20-25
+export interface SortStatistics {
+  /** Number of comparisons made */
+  comparisons: number;
+  /** Number of swaps or array writes performed */
+  swaps: number;
+}
+```
+
+<Warning>
+  Statistics are updated internally during each step but only synchronized to the reactive `$state` once per batch (not once per step). This optimization reduces reactivity overhead during high-frequency updates at fast speeds.
+</Warning>
+
+## Interpreting algorithm behavior
+
+Different algorithms produce distinct visual patterns:
+
+- **Bubble Sort**: You'll see many comparisons between adjacent elements, with swaps moving larger elements toward the end.
+- **Quick Sort**: Watch for pivot selection and partitioning, where elements are reorganized around the pivot.
+- **Merge Sort**: Notice the merge operations that combine sorted subarrays, with many elements marked as sorted simultaneously.
+- **Heap Sort**: Look for the heap structure being built and maintained, with pivots marking heap operations.
+- **Insertion Sort**: Elements are inserted into their correct position one at a time, creating a growing sorted region.
+- **Selection Sort**: The algorithm repeatedly finds the minimum element and places it at the beginning.
+
+The statistics display at the bottom shows complexity metrics for each algorithm, helping you understand the theoretical performance characteristics.

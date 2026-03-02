@@ -1,0 +1,193 @@
+---
+title: Heap sort
+description: In-place algorithm using a binary heap with guaranteed O(n log n) performance
+---
+
+Heap sort is a comparison-based algorithm that uses a binary heap data structure. It builds a max heap from the input array, then repeatedly extracts the maximum element and places it at the end of the sorted portion.
+
+## How it works
+
+1. **Build max heap** - Convert the array into a max heap structure
+2. **Extract maximum** - Swap the root (maximum) with the last element
+3. **Restore heap** - Sift down the new root to restore the heap property
+4. **Repeat** - Continue until all elements are sorted
+
+<Note>
+  Heap sort combines the best of both worlds: O(n log n) worst-case performance like merge sort, and O(1) space complexity like insertion sort.
+</Note>
+
+## Complexity
+
+<CardGroup cols={3}>
+  <Card title="Best case" icon="gauge-high">
+    **O(n log n)**
+    
+    Guaranteed performance
+  </Card>
+  
+  <Card title="Worst case" icon="gauge-low">
+    **O(n log n)**
+    
+    Same as best case
+  </Card>
+  
+  <Card title="Space" icon="memory">
+    **O(1)**
+    
+    In-place sorting
+  </Card>
+</CardGroup>
+
+**Stability:** No - the heap operations can reorder equal elements
+
+## Implementation
+
+The implementation consists of two key functions:
+
+### Sift down
+```typescript
+function* siftDown(arr: Uint8Array, n: number, i: number): Generator<SortStep, void, undefined> {
+  while (true) {
+    let largest = i;
+    const l = 2 * i + 1;
+    const r = 2 * i + 2;
+
+    if (l < n) {
+      yield { type: 'compare', indices: [largest, l] };
+      if (arr[l]! > arr[largest]!) largest = l;
+    }
+
+    if (r < n) {
+      yield { type: 'compare', indices: [largest, r] };
+      if (arr[r]! > arr[largest]!) largest = r;
+    }
+
+    if (largest === i) break;
+
+    [arr[i], arr[largest]] = [arr[largest]!, arr[i]!];
+    yield { type: 'swap', indices: [i, largest] };
+    i = largest;
+  }
+}
+```
+
+### Main heap sort
+```typescript
+export function* heapSort(arr: Uint8Array): Generator<SortStep, void, undefined> {
+  const n = arr.length;
+
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) yield* siftDown(arr, n, i);
+
+  for (let i = n - 1; i > 0; i--) {
+    [arr[0], arr[i]] = [arr[i]!, arr[0]!];
+    yield { type: 'swap', indices: [0, i] };
+    yield* siftDown(arr, i, 0);
+    yield { type: 'sorted', indices: [i] };
+  }
+
+  yield { type: 'sorted', indices: [0] };
+}
+```
+
+## Visualization steps
+
+Heap sort uses three types of visualization steps:
+
+### Compare
+```typescript
+{ type: 'compare', indices: [parent, child] }
+```
+Compares a parent node with its children in the heap.
+
+### Swap
+```typescript
+{ type: 'swap', indices: [i, j] }
+```
+Swaps elements to maintain the heap property or to extract the maximum.
+
+### Sorted
+```typescript
+{ type: 'sorted', indices: [i] }
+```
+Marks an element that has been placed in its final sorted position.
+
+## Binary heap structure
+
+The heap is represented as an array where for element at index `i`:
+
+- **Left child:** `2 * i + 1`
+- **Right child:** `2 * i + 2`
+- **Parent:** `Math.floor((i - 1) / 2)`
+
+**Max heap property:** Every parent node is greater than or equal to its children.
+
+## Key features
+
+<AccordionGroup>
+  <Accordion title="In-place sorting">
+    Heap sort requires only O(1) extra space for loop variables. The heap is built directly in the input array, and elements are sorted in place by swapping the maximum to the end.
+  </Accordion>
+  
+  <Accordion title="Guaranteed O(n log n)">
+    Unlike quick sort, heap sort always runs in O(n log n) time. Building the heap takes O(n), and each of the n extract-max operations takes O(log n).
+  </Accordion>
+  
+  <Accordion title="Sift down optimization">
+    The implementation uses an iterative sift-down rather than recursive. This avoids function call overhead and uses a while loop to repeatedly move the element down the heap.
+  </Accordion>
+  
+  <Accordion title="Bottom-up heap construction">
+    The heap is built starting from the last non-leaf node (`Math.floor(n / 2) - 1`) and working backwards. This is more efficient than inserting elements one by one.
+  </Accordion>
+  
+  <Accordion title="Not stable">
+    Heap sort is not stable because the heap operations can move equal elements past each other. For example, when extracting the maximum, equal elements may be reordered.
+  </Accordion>
+</AccordionGroup>
+
+## Algorithm phases
+
+<Tabs>
+  <Tab title="Phase 1: Build heap">
+    The first phase converts the input array into a max heap:
+    
+    ```typescript
+    for (let i = Math.floor(n / 2) - 1; i >= 0; i--)
+      yield* siftDown(arr, n, i);
+    ```
+    
+    Starting from the last non-leaf node, each subtree is converted into a valid max heap by sifting down.
+  </Tab>
+  
+  <Tab title="Phase 2: Extract and sort">
+    The second phase repeatedly extracts the maximum:
+    
+    ```typescript
+    for (let i = n - 1; i > 0; i--) {
+      [arr[0], arr[i]] = [arr[i]!, arr[0]!];
+      yield { type: 'swap', indices: [0, i] };
+      yield* siftDown(arr, i, 0);
+      yield { type: 'sorted', indices: [i] };
+    }
+    ```
+    
+    The root (maximum) is swapped with the last unsorted element, then the heap is restored with one fewer element.
+  </Tab>
+</Tabs>
+
+## When to use
+
+<Check>
+  Heap sort is excellent for:
+  - When guaranteed O(n log n) performance is needed
+  - When memory is constrained (O(1) space)
+  - Embedded systems with limited stack space
+  - When you need to find the k largest/smallest elements
+</Check>
+
+<Warning>
+  Consider alternatives when:
+  - Stability is required (use merge sort)
+  - Average-case performance matters more than worst-case (quick sort is typically faster)
+  - Cache performance is critical (heap sort has poor cache locality)
+</Warning>

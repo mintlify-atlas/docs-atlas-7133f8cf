@@ -1,0 +1,123 @@
+---
+title: Bubble sort
+description: Simple comparison-based algorithm that repeatedly swaps adjacent elements
+---
+
+Bubble sort is one of the simplest sorting algorithms. It repeatedly steps through the array, compares adjacent elements, and swaps them if they're in the wrong order. The process repeats until no more swaps are needed.
+
+## How it works
+
+The algorithm works by "bubbling" the largest unsorted element to its correct position at the end of the array in each pass:
+
+1. Compare each pair of adjacent elements from left to right
+2. Swap them if they're in the wrong order
+3. After each pass, the largest element "bubbles up" to its final position
+4. Reduce the boundary and repeat until the array is sorted
+
+<Note>
+  Bubble sort includes an optimization: it tracks the position of the last swap. Elements after this position are already sorted, so they can be skipped in the next pass.
+</Note>
+
+## Complexity
+
+<CardGroup cols={3}>
+  <Card title="Best case" icon="gauge-high">
+    **O(n)**
+    
+    When the array is already sorted
+  </Card>
+  
+  <Card title="Worst case" icon="gauge-low">
+    **O(n²)**
+    
+    When the array is reverse sorted
+  </Card>
+  
+  <Card title="Space" icon="memory">
+    **O(1)**
+    
+    In-place sorting
+  </Card>
+</CardGroup>
+
+**Stability:** Yes - equal elements maintain their relative order
+
+## Implementation
+
+The algorithm is implemented as a generator function that yields visualization steps:
+
+```typescript
+import type { SortStep } from '$types/algorithm';
+
+export function* bubbleSort(arr: Uint8Array): Generator<SortStep, void, undefined> {
+  const n = arr.length;
+  let bound = n - 1;
+
+  while (bound > 0) {
+    let newBound = 0;
+
+    for (let j = 0; j < bound; j++) {
+      yield { type: 'compare', indices: [j, j + 1] };
+
+      if (arr[j]! > arr[j + 1]!) {
+        [arr[j], arr[j + 1]] = [arr[j + 1]!, arr[j]!];
+        newBound = j;
+        yield { type: 'swap', indices: [j, j + 1] };
+      }
+    }
+
+    const sortedIndices = Array.from({ length: bound - newBound }, (_, i) => newBound + 1 + i);
+    if (sortedIndices.length) yield { type: 'sorted', indices: sortedIndices };
+    bound = newBound;
+  }
+
+  yield { type: 'sorted', indices: [0] };
+}
+```
+
+## Visualization steps
+
+The generator yields three types of steps:
+
+### Compare
+```typescript
+{ type: 'compare', indices: [j, j + 1] }
+```
+Highlights two adjacent elements being compared.
+
+### Swap
+```typescript
+{ type: 'swap', indices: [j, j + 1] }
+```
+Swaps two elements that are out of order.
+
+### Sorted
+```typescript
+{ type: 'sorted', indices: sortedIndices }
+```
+Marks elements that have reached their final position.
+
+## Key features
+
+<AccordionGroup>
+  <Accordion title="Optimization">
+    The implementation tracks `newBound` - the position of the last swap. All elements after this position are already in order, so the next pass only needs to check up to this boundary. This significantly improves performance on nearly-sorted arrays.
+  </Accordion>
+  
+  <Accordion title="Stability">
+    Bubble sort is stable because it only swaps adjacent elements when `arr[j] > arr[j + 1]` (strictly greater). Equal elements are never swapped, preserving their original order.
+  </Accordion>
+  
+  <Accordion title="In-place sorting">
+    The algorithm requires only O(1) extra space for loop variables and temporary values during swaps. The input array is sorted in place.
+  </Accordion>
+</AccordionGroup>
+
+## When to use
+
+<Warning>
+  Bubble sort is rarely used in practice due to its poor average-case performance. However, it's useful for:
+  - Educational purposes
+  - Small datasets (< 10 elements)
+  - Nearly-sorted data where it can achieve O(n) performance
+</Warning>

@@ -1,0 +1,186 @@
+---
+title: Introduction
+description: An interactive visualization tool for understanding sorting algorithms through real-time animation and performance tracking
+---
+
+Sortvis is an interactive visualization tool that brings sorting algorithms to life. Watch as algorithms manipulate data structures in real-time, with color-coded states and performance metrics that help you understand exactly how each algorithm works.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get Sortvis running locally in under 2 minutes
+  </Card>
+  <Card title="Live playground" icon="play" href="https://sortvis.pages.dev">
+    Try the interactive demo in your browser
+  </Card>
+  <Card title="GitHub" icon="github" href="https://github.com/qonTesq/sortvis">
+    View source code and contribute
+  </Card>
+  <Card title="Algorithms" icon="code" href="#supported-algorithms">
+    Explore the 6 implemented sorting algorithms
+  </Card>
+</CardGroup>
+
+## What is Sortvis?
+
+Sortvis transforms abstract sorting algorithms into visual, interactive experiences. By rendering each comparison, swap, and state change as animated colored bars, you can see exactly how different algorithms approach the same problem.
+
+The visualization engine uses generator functions to yield discrete steps that are rendered frame-by-frame, giving you precise control over animation speed and the ability to pause, resume, or reset at any point.
+
+## Key features
+
+<CardGroup cols={2}>
+  <Card title="6 sorting algorithms" icon="bars-sort">
+    Bubble, Quick, Merge, Heap, Insertion, and Selection Sort with full implementations
+  </Card>
+  <Card title="Real-time statistics" icon="chart-line">
+    Track comparisons and swaps as algorithms execute
+  </Card>
+  <Card title="Speed controls" icon="gauge-high">
+    6 speed levels from snail (500ms) to flash (100 steps/frame)
+  </Card>
+  <Card title="Adjustable array size" icon="sliders">
+    Test with 10 to 512 elements to see performance characteristics
+  </Card>
+  <Card title="Color-coded states" icon="palette">
+    Visual feedback for comparing, swapping, sorted, pivot, and merge operations
+  </Card>
+  <Card title="Responsive design" icon="mobile">
+    Works seamlessly on desktop and mobile devices
+  </Card>
+</CardGroup>
+
+## Supported algorithms
+
+Each algorithm includes complexity information and a brief description to help you understand its characteristics:
+
+<AccordionGroup>
+  <Accordion title="Bubble Sort" icon="circle">
+    Repeatedly compares and swaps adjacent elements until sorted.
+    
+    - **Best case:** O(n)
+    - **Worst case:** O(n²)
+    - **Space complexity:** O(1)
+    - **Stable:** Yes
+  </Accordion>
+
+  <Accordion title="Quick Sort" icon="bolt">
+    Partitions by a pivot and recursively sorts the parts. Uses median-of-three pivot selection.
+    
+    - **Best case:** O(n log n)
+    - **Worst case:** O(n²)
+    - **Space complexity:** O(log n)
+    - **Stable:** No
+  </Accordion>
+
+  <Accordion title="Merge Sort" icon="code-merge">
+    Recursively splits the array, then merges sorted halves.
+    
+    - **Best case:** O(n log n)
+    - **Worst case:** O(n log n)
+    - **Space complexity:** O(n)
+    - **Stable:** Yes
+  </Accordion>
+
+  <Accordion title="Heap Sort" icon="layer-group">
+    Builds a heap and repeatedly moves the max to the end.
+    
+    - **Best case:** O(n log n)
+    - **Worst case:** O(n log n)
+    - **Space complexity:** O(1)
+    - **Stable:** No
+  </Accordion>
+
+  <Accordion title="Insertion Sort" icon="arrow-down-short-wide">
+    Builds a sorted portion by inserting each element into place.
+    
+    - **Best case:** O(n)
+    - **Worst case:** O(n²)
+    - **Space complexity:** O(1)
+    - **Stable:** Yes
+  </Accordion>
+
+  <Accordion title="Selection Sort" icon="hand-pointer">
+    Repeatedly selects the smallest unsorted element and places it in order.
+    
+    - **Best case:** O(n²)
+    - **Worst case:** O(n²)
+    - **Space complexity:** O(1)
+    - **Stable:** No
+  </Accordion>
+</AccordionGroup>
+
+## Technology stack
+
+Sortvis is built with modern web technologies optimized for performance:
+
+- **Svelte 5** - Reactive UI framework with runes-based state management
+- **SvelteKit** - Full-stack framework with static site generation
+- **TypeScript** - Type-safe algorithm implementations
+- **Vite** - Fast build tooling and hot module replacement
+- **Tailwind CSS** - Utility-first styling with custom theme
+- **shadcn-svelte** - Accessible UI component library
+
+## How it works
+
+The visualization engine uses a generator-based architecture that separates algorithm logic from rendering:
+
+```typescript
+export function* bubbleSort(arr: Uint8Array): Generator<SortStep, void, undefined> {
+  const n = arr.length;
+  let bound = n - 1;
+
+  while (bound > 0) {
+    let newBound = 0;
+
+    for (let j = 0; j < bound; j++) {
+      yield { type: 'compare', indices: [j, j + 1] };
+
+      if (arr[j]! > arr[j + 1]!) {
+        [arr[j], arr[j + 1]] = [arr[j + 1]!, arr[j]!];
+        newBound = j;
+        yield { type: 'swap', indices: [j, j + 1] };
+      }
+    }
+
+    const sortedIndices = Array.from({ length: bound - newBound }, (_, i) => newBound + 1 + i);
+    if (sortedIndices.length) yield { type: 'sorted', indices: sortedIndices };
+    bound = newBound;
+  }
+
+  yield { type: 'sorted', indices: [0] };
+}
+```
+
+Each algorithm yields typed step objects that the visualizer engine processes:
+
+```typescript
+type SortStep =
+  | { type: 'compare'; indices: [number, number] }
+  | { type: 'swap'; indices: [number, number] }
+  | { type: 'pivot'; indices: [number] }
+  | { type: 'sorted'; indices: number[] }
+  | { type: 'merge'; indices: [number]; value: number };
+```
+
+The visualizer maintains two `Uint8Array` buffers - one for bar values (5-104) and one for color states (0-5). This approach uses 8x less memory than traditional `number[]` arrays and enables native `memcpy` for efficient canvas snapshots.
+
+## Performance optimizations
+
+Sortvis implements several optimizations for smooth 60fps animations:
+
+- **Uint8Array buffers** - Single-byte integers reduce memory footprint
+- **Batch processing** - Higher speeds process multiple steps per frame
+- **Dirty tracking** - Only restore modified bar colors between frames
+- **Non-reactive internals** - Statistics counters sync once per batch, not per step
+- **Canvas rendering** - Direct pixel manipulation for maximum performance
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Get started" icon="rocket" href="/quickstart">
+    Install and run Sortvis locally
+  </Card>
+  <Card title="Try it live" icon="globe" href="https://sortvis.pages.dev">
+    Experiment with the hosted version
+  </Card>
+</CardGroup>

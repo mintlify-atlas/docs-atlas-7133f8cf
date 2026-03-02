@@ -1,0 +1,173 @@
+---
+title: Insertion sort
+description: Simple and efficient algorithm for small or nearly-sorted arrays
+---
+
+Insertion sort builds a sorted array one element at a time by repeatedly taking the next unsorted element and inserting it into its correct position in the sorted portion. It's similar to how you might sort a hand of playing cards.
+
+## How it works
+
+1. **Start with first element** - The first element is considered sorted
+2. **Pick next element** - Take the next unsorted element
+3. **Find insertion point** - Compare backwards through the sorted portion
+4. **Shift elements** - Move larger elements one position right
+5. **Insert** - Place the element in its correct position
+6. **Repeat** - Continue until all elements are sorted
+
+<Note>
+  Insertion sort is highly efficient for small arrays (< 10-20 elements) and nearly-sorted data. Many advanced algorithms like Timsort use insertion sort for small sub-arrays.
+</Note>
+
+## Complexity
+
+<CardGroup cols={3}>
+  <Card title="Best case" icon="gauge-high">
+    **O(n)**
+    
+    When array is already sorted
+  </Card>
+  
+  <Card title="Worst case" icon="gauge-low">
+    **O(n²)**
+    
+    When array is reverse sorted
+  </Card>
+  
+  <Card title="Space" icon="memory">
+    **O(1)**
+    
+    In-place sorting
+  </Card>
+</CardGroup>
+
+**Stability:** Yes - equal elements maintain their relative order
+
+## Implementation
+
+```typescript
+import type { SortStep } from '$types/algorithm';
+
+export function* insertionSort(arr: Uint8Array): Generator<SortStep, void, undefined> {
+  yield { type: 'sorted', indices: [0] };
+
+  for (let i = 1; i < arr.length; i++) {
+    const current = arr[i]!;
+    let j = i;
+
+    while (j > 0) {
+      yield { type: 'compare', indices: [j - 1, j] };
+      if (arr[j - 1]! <= current) break;
+      arr[j] = arr[j - 1]!;
+      yield { type: 'swap', indices: [j - 1, j] };
+      j--;
+    }
+
+    arr[j] = current;
+    yield { type: 'sorted', indices: [j] };
+  }
+}
+```
+
+## Visualization steps
+
+Insertion sort uses three types of visualization steps:
+
+### Compare
+```typescript
+{ type: 'compare', indices: [j - 1, j] }
+```
+Compares the current element with elements in the sorted portion.
+
+### Swap
+```typescript
+{ type: 'swap', indices: [j - 1, j] }
+```
+Shifts an element one position to the right. Note that this isn't a true swap - it's actually a copy operation, but the visualization shows it as a swap for clarity.
+
+### Sorted
+```typescript
+{ type: 'sorted', indices: [j] }
+```
+Marks the position where the current element is inserted.
+
+## Key features
+
+<AccordionGroup>
+  <Accordion title="Adaptive performance">
+    Insertion sort is adaptive - it performs significantly better on nearly-sorted data. If the array is already sorted, it runs in O(n) time with just one comparison per element.
+  </Accordion>
+  
+  <Accordion title="Stability">
+    The algorithm is stable because it only moves elements when `arr[j - 1]! > current` (strictly greater). Equal elements are never moved past each other, preserving their original order.
+  </Accordion>
+  
+  <Accordion title="In-place and online">
+    Insertion sort is in-place (O(1) space) and online - it can sort elements as they arrive without needing the entire array upfront.
+  </Accordion>
+  
+  <Accordion title="Early termination">
+    The inner while loop breaks as soon as it finds the correct insertion point (`arr[j - 1]! <= current`). On nearly-sorted data, this happens quickly.
+  </Accordion>
+</AccordionGroup>
+
+## Algorithm walkthrough
+
+Here's how insertion sort processes an example array `[3, 1, 4, 1, 5]`:
+
+<Steps>
+  <Step title="Initial state">
+    `[3, 1, 4, 1, 5]` - First element `3` is considered sorted
+  </Step>
+  
+  <Step title="Insert 1">
+    Compare `1` with `3`, shift `3` right, insert `1`: `[1, 3, 4, 1, 5]`
+  </Step>
+  
+  <Step title="Insert 4">
+    Compare `4` with `3`, already in order: `[1, 3, 4, 1, 5]`
+  </Step>
+  
+  <Step title="Insert 1">
+    Compare `1` with `4`, `3`, shift both right, insert at position 1: `[1, 1, 3, 4, 5]`
+  </Step>
+  
+  <Step title="Insert 5">
+    Compare `5` with `4`, already in order: `[1, 1, 3, 4, 5]` - Done!
+  </Step>
+</Steps>
+
+## Performance characteristics
+
+| Input type | Time complexity | Why |
+|------------|----------------|-----|
+| Already sorted | O(n) | One comparison per element, no shifts |
+| Reverse sorted | O(n²) | Every element requires n/2 shifts on average |
+| Random data | O(n²) | Average case requires many comparisons and shifts |
+| Nearly sorted | O(n + d) | Where d is the number of inversions |
+
+## When to use
+
+<Check>
+  Insertion sort is excellent for:
+  - Small arrays (< 10-20 elements)
+  - Nearly-sorted data
+  - Online sorting (sorting as data arrives)
+  - As a subroutine in hybrid algorithms (Timsort, Introsort)
+  - When simplicity and code size matter
+</Check>
+
+<Warning>
+  Avoid insertion sort when:
+  - Working with large datasets (> 100 elements)
+  - Data is randomly distributed
+  - You need guaranteed O(n log n) performance
+</Warning>
+
+## Comparison with bubble sort
+
+Both insertion sort and bubble sort are O(n²) algorithms, but insertion sort is generally faster:
+
+- **Fewer writes:** Insertion sort performs fewer writes than bubble sort
+- **Better constants:** The inner loop is simpler and faster
+- **Adaptive:** Insertion sort degrades more gracefully on partially sorted data
+- **Practical use:** Insertion sort is used in production algorithms; bubble sort rarely is

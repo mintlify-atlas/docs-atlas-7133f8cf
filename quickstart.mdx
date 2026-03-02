@@ -1,80 +1,396 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get Sortvis running locally in under 2 minutes with Bun, pnpm, or npm
 ---
 
-## Get started in three steps
+This guide will help you clone, install, and run Sortvis on your local machine. The entire process takes less than 2 minutes.
 
-Get your documentation site running locally and make your first customization.
+## Prerequisites
 
-### Step 1: Set up your local environment
+You'll need one of the following package managers installed:
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+<CardGroup cols={3}>
+  <Card title="Bun" icon="b" href="https://bun.sh">
+    Recommended - Native package manager
+  </Card>
+  <Card title="pnpm" icon="p" href="https://pnpm.io">
+    Fast, disk space efficient
+  </Card>
+  <Card title="npm" icon="n" href="https://nodejs.org">
+    Comes with Node.js
+  </Card>
 </CardGroup>
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Sortvis uses a `bun.lock` file, meaning Bun is the natively used package manager. However, pnpm and npm work equally well.
 </Note>
+
+## Installation
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the Sortvis repository from GitHub:
+
+    ```bash
+    git clone https://github.com/qonTesq/sortvis.git
+    ```
+  </Step>
+
+  <Step title="Navigate to the directory">
+    Change into the project directory:
+
+    ```bash
+    cd sortvis
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Install packages using your preferred package manager:
+
+    <CodeGroup>
+      ```bash Bun
+      bun install
+      ```
+
+      ```bash pnpm
+      pnpm install
+      ```
+
+      ```bash npm
+      npm install
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Start the development server">
+    Launch the Vite development server:
+
+    <CodeGroup>
+      ```bash Bun
+      bun run dev
+      ```
+
+      ```bash pnpm
+      pnpm dev
+      ```
+
+      ```bash npm
+      npm run dev
+      ```
+    </CodeGroup>
+
+    You should see output similar to:
+
+    ```bash
+    VITE v7.3.1  ready in 234 ms
+
+    ➜  Local:   http://localhost:5173/
+    ➜  Network: use --host to expose
+    ➜  press h + enter to show help
+    ```
+  </Step>
+
+  <Step title="Open in browser">
+    Navigate to `http://localhost:5173` in your browser to see Sortvis in action.
+  </Step>
+</Steps>
+
+## Using the visualizer
+
+Once Sortvis is running, you can interact with the visualization:
+
+### Select an algorithm
+
+Choose from 6 sorting algorithms using the algorithm selector in the header:
+
+- **Bubble Sort** - Simple comparison-based algorithm
+- **Quick Sort** - Efficient divide-and-conquer with median-of-three pivot
+- **Merge Sort** - Stable divide-and-conquer algorithm
+- **Heap Sort** - Comparison-based using a binary heap
+- **Insertion Sort** - Builds sorted array one element at a time
+- **Selection Sort** - Repeatedly finds minimum element
+
+### Adjust array size
+
+Use the size slider to change the number of elements (10-512). Larger arrays make algorithmic differences more visible:
+
+```typescript
+const SIZE_MIN = 10;
+const SIZE_MAX = 512;
+```
+
+### Control playback speed
+
+Choose from 6 speed levels:
+
+<CardGroup cols={3}>
+  <Card title="Snail" icon="turtle">
+    500ms delay, 1 step/frame - Perfect for learning
+  </Card>
+  <Card title="Slow" icon="gauge-low">
+    100ms delay, 1 step/frame - Educational pace
+  </Card>
+  <Card title="Medium" icon="gauge">
+    10ms delay, 1 step/frame - Default setting
+  </Card>
+  <Card title="Fast" icon="gauge-high">
+    0ms delay, 1 step/frame - Quick visualization
+  </Card>
+  <Card title="Rapid" icon="forward">
+    0ms delay, 5 steps/frame - Very fast
+  </Card>
+  <Card title="Flash" icon="bolt">
+    0ms delay, 100 steps/frame - Near instant
+  </Card>
+</CardGroup>
+
+The speed configuration is defined in the visualizer engine:
+
+```typescript
+const SPEED_CONFIG: Record<SpeedLevel, { delay: number; batch: number }> = {
+  snail: { delay: 500, batch: 1 },
+  slow: { delay: 100, batch: 1 },
+  med: { delay: 10, batch: 1 },
+  fast: { delay: 0, batch: 1 },
+  rapid: { delay: 0, batch: 5 },
+  flash: { delay: 0, batch: 100 }
+};
+```
+
+### Understand the color codes
+
+Bars change color to indicate their state during sorting:
+
+| Color | State | Description |
+|-------|-------|-------------|
+| Default | Neutral | Unsorted, not currently being processed |
+| Comparing | Active | Being compared with another element |
+| Swapping | Action | Being swapped or moved |
+| Sorted | Complete | In final sorted position |
+| Pivot | Reference | Selected as pivot (Quick Sort) |
+| Merge | Action | Being merged (Merge Sort) |
+
+The state types are defined as a discriminated union:
+
+```typescript
+type BarState = 'default' | 'comparing' | 'swapping' | 'sorted' | 'pivot' | 'merge';
+```
+
+### View statistics
+
+Real-time statistics are displayed at the bottom of the screen (desktop only):
+
+- **Comparisons** - Number of element comparisons performed
+- **Swaps** - Number of swaps or array writes executed
+
+```typescript
+interface SortStatistics {
+  /** Number of comparisons made */
+  comparisons: number;
+  /** Number of swaps or array writes performed */
+  swaps: number;
+}
+```
+
+## Building for production
+
+Create an optimized production build:
+
+<CodeGroup>
+  ```bash Bun
+  bun run build
+  ```
+
+  ```bash pnpm
+  pnpm build
+  ```
+
+  ```bash npm
+  npm run build
+  ```
+</CodeGroup>
+
+This generates a static site in the `build/` directory using SvelteKit's static adapter.
+
+### Preview the build
+
+Test the production build locally:
+
+<CodeGroup>
+  ```bash Bun
+  bun run preview
+  ```
+
+  ```bash pnpm
+  pnpm preview
+  ```
+
+  ```bash npm
+  npm run preview
+  ```
+</CodeGroup>
+
+Then open `http://localhost:4173` in your browser.
+
+## Code quality
+
+Sortvis includes linting and formatting tools:
+
+### Format code
+
+Automatically format all files with Prettier:
+
+<CodeGroup>
+  ```bash Bun
+  bun run format
+  ```
+
+  ```bash pnpm
+  pnpm format
+  ```
+
+  ```bash npm
+  npm run format
+  ```
+</CodeGroup>
+
+### Lint code
+
+Check for syntax and style issues:
+
+<CodeGroup>
+  ```bash Bun
+  bun run lint
+  ```
+
+  ```bash pnpm
+  pnpm lint
+  ```
+
+  ```bash npm
+  npm run lint
+  ```
+</CodeGroup>
+
+### Type checking
+
+Run Svelte type checking:
+
+<CodeGroup>
+  ```bash Bun
+  bun run check
+  ```
+
+  ```bash pnpm
+  pnpm check
+  ```
+
+  ```bash npm
+  npm run check
+  ```
+</CodeGroup>
+
+For continuous type checking during development:
+
+<CodeGroup>
+  ```bash Bun
+  bun run check:watch
+  ```
+
+  ```bash pnpm
+  pnpm check:watch
+  ```
+
+  ```bash npm
+  npm run check:watch
+  ```
+</CodeGroup>
+
+## Project structure
+
+Understanding the codebase organization:
+
+```text
+src/
+├── lib/
+│   ├── algorithms/    # Sorting logic implementations
+│   │   ├── bubble.ts      # Bubble Sort with optimized bound tracking
+│   │   ├── quick.ts       # Quick Sort with median-of-three pivot
+│   │   ├── merge.ts       # Merge Sort with in-place visualization
+│   │   ├── heap.ts        # Heap Sort with heapify operations
+│   │   ├── insertion.ts   # Insertion Sort
+│   │   ├── selection.ts   # Selection Sort
+│   │   └── index.ts       # Algorithm exports
+│   ├── components/    # Svelte UI components
+│   │   ├── layout/        # Canvas renderer, Controls, Header, Footer
+│   │   └── ui/            # shadcn-svelte components
+│   ├── config/        # Configuration files
+│   │   ├── algorithms.ts  # Algorithm metadata and complexity info
+│   │   └── speeds.ts      # Speed level definitions
+│   ├── store/         # State management
+│   │   ├── visualizer.svelte.ts  # Main visualizer engine
+│   │   └── media.svelte.ts       # Responsive breakpoint detection
+│   └── types/         # TypeScript interfaces
+│       ├── algorithm.ts   # AlgorithmId, SortStep, SortStatistics
+│       └── visualizer.ts  # BarState, SpeedLevel
+└── routes/            # SvelteKit routes
+    ├── +page.svelte       # Main application page
+    └── +layout.svelte     # Root layout with theme provider
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="View the source" icon="github" href="https://github.com/qonTesq/sortvis">
+    Explore the implementation on GitHub
+  </Card>
+  <Card title="Try it live" icon="globe" href="https://sortvis.pages.dev">
+    Use the hosted version
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Port 5173 is already in use">
+    If port 5173 is occupied, Vite will automatically try the next available port (5174, 5175, etc.). Check the terminal output for the actual URL.
+    
+    You can also specify a custom port:
+    
+    ```bash
+    bun run dev -- --port 3000
+    ```
+  </Accordion>
+
+  <Accordion title="Module not found errors">
+    If you see module resolution errors, try:
+    
+    1. Delete `node_modules` and lockfile
+    2. Reinstall dependencies
+    3. Run `bun run prepare` to sync SvelteKit
+    
+    ```bash
+    rm -rf node_modules bun.lock
+    bun install
+    bun run prepare
+    ```
+  </Accordion>
+
+  <Accordion title="Type errors in the editor">
+    Make sure your editor has the Svelte extension installed and run the prepare script:
+    
+    ```bash
+    bun run prepare
+    ```
+    
+    This syncs SvelteKit's generated types.
+  </Accordion>
+
+  <Accordion title="Build fails with memory errors">
+    If you encounter out-of-memory errors during build, try increasing Node's memory limit:
+    
+    ```bash
+    NODE_OPTIONS="--max-old-space-size=4096" bun run build
+    ```
+  </Accordion>
+</AccordionGroup>

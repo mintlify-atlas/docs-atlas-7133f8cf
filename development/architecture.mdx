@@ -1,0 +1,249 @@
+---
+title: Architecture
+description: Learn about Sortvis's technical architecture, including the visualizer engine, component design, and state management approach
+---
+
+Sortvis is built with modern web technologies to deliver a performant, interactive sorting algorithm visualization experience. This guide covers the core architectural decisions and design patterns used throughout the project.
+
+## Tech stack
+
+The project is built on the following technologies:
+
+- **Svelte 5**: Modern reactive UI framework with runes-based reactivity
+- **SvelteKit**: Application framework with file-based routing and adapters
+- **TypeScript**: Strict type safety with discriminated unions
+- **Tailwind CSS 4**: Utility-first styling with Vite integration
+- **shadcn-svelte**: Accessible component primitives built on bits-ui
+- **Vite**: Fast build tool with HMR and optimized production builds
+- **Bun**: Native package manager (also works with pnpm/npm)
+
+## Project structure
+
+The codebase follows a modular architecture organized by feature:
+
+```text
+src/
+├── lib/
+│   ├── algorithms/    # Sorting algorithm implementations
+│   ├── components/    # UI components (layout + shadcn-svelte)
+│   ├── config/        # Algorithm metadata and speed configurations
+│   ├── store/         # Global state (visualizer engine + media queries)
+│   └── types/         # TypeScript type definitions
+└── routes/            # SvelteKit pages and layouts
+```
+
+### Algorithms directory
+
+Location: `src/lib/algorithms/`
+
+Each sorting algorithm is implemented as a TypeScript generator function that yields `SortStep` objects:
+
+- `bubble.ts` - Bubble sort with optimized bounds
+- `quick.ts` - Quick sort with pivot selection
+- `merge.ts` - Merge sort with auxiliary array
+- `heap.ts` - Heap sort with max heap construction
+- `insertion.ts` - Insertion sort
+- `selection.ts` - Selection sort
+- `index.ts` - Re-exports all algorithms
+
+Each algorithm follows the same signature:
+
+```typescript
+function* algorithmName(arr: Uint8Array): Generator<SortStep, void, undefined>
+```
+
+### Components directory
+
+Location: `src/lib/components/`
+
+Components are split into two categories:
+
+**Layout components** (`layout/`):
+- `canvas/` - Canvas renderer with optimized diffing (Canvas.svelte, renderer.svelte.ts, draw.ts, colors.ts)
+- `header/` - Top navigation with algorithm info (responsive variants)
+- `footer/` - Playback controls and algorithm selector (responsive variants)
+- `stats/` - Statistics display (comparisons, swaps, complexity)
+
+**UI components** (`ui/`):
+- shadcn-svelte components (button, card, slider, select, etc.)
+- Accessible, composable primitives built on bits-ui
+
+### Config directory
+
+Location: `src/lib/config/`
+
+- `algorithms.ts` - Algorithm metadata (complexity, stability, descriptions)
+- `speeds.ts` - Speed level configurations
+
+Algorithm metadata includes time complexity, space complexity, stability, and descriptions for display in the UI.
+
+### Store directory
+
+Location: `src/lib/store/`
+
+- `visualizer.svelte.ts` - Core visualizer engine (main state class)
+- `media.svelte.ts` - Responsive media query state
+- `index.ts` - Re-exports all stores
+
+The visualizer store is the heart of the application, managing all sorting state and animation logic.
+
+### Types directory
+
+Location: `src/lib/types/`
+
+- `algorithm.ts` - Algorithm-related types (AlgorithmId, SortStep, AlgorithmInfo)
+- `visualizer.ts` - Visualizer state types (BarState, SpeedLevel, constants)
+- `index.ts` - Re-exports all types
+
+Types use discriminated unions for type-safe step handling:
+
+```typescript
+type SortStep =
+  | { type: 'compare'; indices: [number, number] }
+  | { type: 'swap'; indices: [number, number] }
+  | { type: 'pivot'; indices: [number] }
+  | { type: 'sorted'; indices: number[] }
+  | { type: 'merge'; indices: [number]; value: number }
+```
+
+## Visualizer engine design
+
+The visualizer engine (`src/lib/store/visualizer.svelte.ts`) is implemented as a class-based state manager using Svelte 5 runes.
+
+### Core architecture
+
+<Steps>
+  <Step title="Generator-based algorithms">
+    Each sorting algorithm is a generator function that yields discrete steps (compare, swap, pivot, sorted, merge). This allows the engine to pause, resume, and control animation speed independently of algorithm logic.
+  </Step>
+  
+  <Step title="Uint8Array for performance">
+    The `array` (bar values) and `colors` (bar states) are stored as `Uint8Array` instead of regular arrays. This provides 8x memory savings and enables native `memcpy` for efficient canvas snapshots.
+  </Step>
+  
+  <Step title="Selective reactivity">
+    The engine uses a `tick` signal to notify the canvas when to re-render, avoiding per-mutation reactivity overhead. Deep reactivity is intentionally disabled for high-frequency updates.
+  </Step>
+  
+  <Step title="Batch processing">
+    At higher speeds, multiple steps are processed per frame (batch size increases with speed level), while stats are only synced to reactive state once per batch.
+  </Step>
+</Steps>
+
+### State management
+
+The `VisualizerState` class exposes:
+
+**Reactive state**:
+- `array: Uint8Array` - Current bar values
+- `colors: Uint8Array` - Current bar color states
+- `tick: number` - Triggers canvas re-render
+- `stats: SortStatistics` - Comparisons and swaps count
+- `status: 'idle' | 'playing' | 'paused' | 'finished'`
+- `size: number` - Number of bars (10-512)
+- `speed: SpeedLevel` - Animation speed
+- `algorithmId: AlgorithmId` - Current algorithm
+
+**Actions**:
+- `generateArray()` - Create new random array
+- `reset()` - Restore to initial state
+- `play()` - Start/resume animation
+- `pause()` - Pause animation
+- `setAlgorithm(id)` - Switch algorithm
+- `setSize(n)` - Change array size
+- `setSpeed(level)` - Adjust speed
+
+### Speed configuration
+
+Speed levels map to engine parameters:
+
+```typescript
+const SPEED_CONFIG: Record<SpeedLevel, { delay: number; batch: number }> = {
+  snail: { delay: 500, batch: 1 },   // 500ms between frames, 1 step per frame
+  slow: { delay: 100, batch: 1 },    // 100ms delay
+  med: { delay: 10, batch: 1 },      // 10ms delay
+  fast: { delay: 0, batch: 1 },      // No delay, 1 step
+  rapid: { delay: 0, batch: 5 },     // No delay, 5 steps per frame
+  flash: { delay: 0, batch: 100 }    // No delay, 100 steps per frame
+}
+```
+
+### Animation loop
+
+The engine uses a timeout-based loop (not requestAnimationFrame) to control speed precisely:
+
+1. Process `batch` number of steps from the generator
+2. Update reactive stats and increment `tick`
+3. Schedule next iteration with `delay` timeout
+4. Loop continues while `status === 'playing'`
+
+This approach allows frame-independent speed control, from ultra-slow (500ms per step) to ultra-fast (100 steps per frame).
+
+## Component architecture
+
+### Canvas renderer
+
+Location: `src/lib/components/layout/canvas/renderer.svelte.ts`
+
+The canvas renderer is a highly optimized rendering system:
+
+**Optimization techniques**:
+- **Dirty tracking**: Only redraws when `visualizer.tick` changes
+- **Differential rendering**: Compares previous and current state to redraw only changed bars
+- **Adaptive strategy**: Full redraw if >40% bars changed, partial redraw otherwise
+- **Sleepy loop**: requestAnimationFrame loop stops when idle (0 CPU usage)
+- **Theme observer**: Watches for dark/light mode changes
+- **Physical pixels**: Uses `devicePixelContentBoxSize` for crisp rendering
+
+**Rendering flow**:
+1. `$effect` watches `visualizer.tick` and sets `dirty = true`
+2. `loop()` checks if dirty and calls `drawFrame()`
+3. `drawFrame()` diffs against `prevColors` and `prevArray` snapshots
+4. Draw strategy: full redraw or partial redraw based on change percentage
+5. Loop continues if playing, otherwise stops
+
+### Responsive design
+
+The application uses a media query store (`src/lib/store/media.svelte.ts`) to switch between desktop and mobile layouts:
+
+- Desktop: Header + Canvas + Footer layout
+- Mobile: Drawer-based controls with compact stats
+
+Components have `Desktop*` and `Mobile*` variants that are conditionally rendered.
+
+## Path aliases
+
+The project uses TypeScript path aliases for cleaner imports:
+
+```typescript
+$components → src/lib/components
+$utils → src/lib/utils
+$types → src/lib/types
+$store → src/lib/store
+$algorithms → src/lib/algorithms
+$config → src/lib/config
+```
+
+Configured in `svelte.config.js` and extended by SvelteKit's generated `tsconfig.json`.
+
+## Build configuration
+
+### Vite setup
+
+Key plugins:
+- `@tailwindcss/vite` - Tailwind CSS 4 integration
+- `@sveltejs/kit/vite` - SvelteKit plugin
+- `@vite-pwa/sveltekit` - Progressive Web App support
+
+### SvelteKit adapter
+
+Uses `@sveltejs/adapter-static` for static site generation, deployed to Cloudflare Pages.
+
+### TypeScript configuration
+
+Strict mode enabled with additional checks:
+- `strict: true`
+- `noUncheckedIndexedAccess: true`
+- `noImplicitOverride: true`
+
+Ensures type safety across all algorithm implementations and state management.

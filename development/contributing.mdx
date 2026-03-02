@@ -1,0 +1,415 @@
+---
+title: Contributing
+description: Learn how to set up your development environment, run the project locally, and contribute new sorting algorithms to Sortvis
+---
+
+Thank you for your interest in contributing to Sortvis! This guide will help you get started with development, understand the workflow, and learn how to add new features.
+
+## Prerequisites
+
+Before you begin, make sure you have one of the following installed:
+
+- **Bun** (recommended) - [Install Bun](https://bun.sh/)
+- **Node.js** - [Install Node.js](https://nodejs.org/)
+
+The project natively uses Bun (with a `bun.lock` file), but also works with pnpm or npm.
+
+## Getting started
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/qonTesq/sortvis.git
+    cd sortvis
+    ```
+  </Step>
+  
+  <Step title="Install dependencies">
+    Using Bun (recommended):
+    ```bash
+    bun install
+    ```
+    
+    Or using pnpm:
+    ```bash
+    pnpm install
+    ```
+    
+    Or using npm:
+    ```bash
+    npm install
+    ```
+  </Step>
+  
+  <Step title="Start the development server">
+    ```bash
+    bun run dev
+    ```
+    
+    Open your browser and navigate to `http://localhost:5173`
+  </Step>
+</Steps>
+
+## Development workflow
+
+The project includes several npm scripts for common tasks:
+
+### Development server
+
+```bash
+bun run dev
+```
+
+Starts the Vite development server with hot module replacement (HMR) at `http://localhost:5173`.
+
+### Build for production
+
+```bash
+bun run build
+```
+
+Creates an optimized production build using SvelteKit's static adapter. Output is generated in the `.svelte-kit` directory.
+
+### Preview production build
+
+```bash
+bun run preview
+```
+
+Serves the production build locally at `http://localhost:4173` for testing before deployment.
+
+### Type checking
+
+```bash
+bun run check
+```
+
+Runs `svelte-check` to validate TypeScript types and Svelte component syntax.
+
+For continuous type checking during development:
+
+```bash
+bun run check:watch
+```
+
+### Linting
+
+```bash
+bun run lint
+```
+
+Runs both Prettier (code formatting) and ESLint (code quality) checks. This command will report issues without modifying files.
+
+### Formatting
+
+```bash
+bun run format
+```
+
+Automatically formats all code using Prettier. This ensures consistent code style across the project.
+
+## Code quality tools
+
+The project uses several tools to maintain code quality:
+
+### ESLint
+
+Configuration: `eslint.config.ts`
+
+Plugins:
+- `@eslint/js` - Core JavaScript rules
+- `typescript-eslint` - TypeScript-specific rules
+- `eslint-plugin-svelte` - Svelte-specific rules
+- `eslint-config-prettier` - Disables conflicting rules with Prettier
+
+Key rules:
+- Svelte reactivity best practices
+- TypeScript strict mode enforcement
+- No unused variables or imports
+
+### Prettier
+
+Configuration: `.prettierrc`
+
+Settings:
+- Single quotes for strings
+- Tab indentation
+- Trailing commas in ES5
+- Print width: 100 characters
+
+Plugins:
+- `prettier-plugin-svelte` - Format Svelte files
+- `prettier-plugin-tailwindcss` - Sort Tailwind classes
+
+<Note>
+  Always run `bun run format` before committing to ensure consistent code style.
+</Note>
+
+## Project structure overview
+
+Understanding the project structure will help you navigate the codebase:
+
+```text
+src/
+├── lib/
+│   ├── algorithms/       # Sorting algorithm implementations
+│   │   ├── bubble.ts
+│   │   ├── quick.ts
+│   │   ├── merge.ts
+│   │   ├── heap.ts
+│   │   ├── insertion.ts
+│   │   ├── selection.ts
+│   │   └── index.ts
+│   ├── components/       # UI components
+│   │   ├── layout/       # Canvas, header, footer, stats
+│   │   └── ui/           # shadcn-svelte components
+│   ├── config/           # Configuration files
+│   │   ├── algorithms.ts # Algorithm metadata
+│   │   └── speeds.ts     # Speed configurations
+│   ├── store/            # Global state management
+│   │   ├── visualizer.svelte.ts  # Main visualizer engine
+│   │   ├── media.svelte.ts       # Responsive breakpoints
+│   │   └── index.ts
+│   ├── types/            # TypeScript definitions
+│   │   ├── algorithm.ts
+│   │   ├── visualizer.ts
+│   │   └── index.ts
+│   └── utils.ts          # Utility functions
+└── routes/               # SvelteKit pages and layouts
+    ├── +layout.svelte
+    ├── +layout.ts
+    └── +page.svelte
+```
+
+### Key directories
+
+- **algorithms/**: Pure TypeScript generator functions for each sorting algorithm
+- **components/layout/**: Application-specific UI components (canvas, controls)
+- **components/ui/**: Reusable shadcn-svelte component primitives
+- **config/**: Static configuration and metadata
+- **store/**: Svelte 5 runes-based state management
+- **types/**: TypeScript type definitions and discriminated unions
+
+## Adding a new sorting algorithm
+
+Contributing a new sorting algorithm involves three main steps:
+
+<Steps>
+  <Step title="Create the algorithm implementation">
+    Create a new file in `src/lib/algorithms/` (e.g., `radix.ts`).
+    
+    Your algorithm must be a generator function that yields `SortStep` objects:
+    
+    ```typescript
+    import type { SortStep } from '$types/algorithm';
+    
+    export function* radixSort(arr: Uint8Array): Generator<SortStep, void, undefined> {
+      const n = arr.length;
+      
+      // Your algorithm logic here
+      // Yield steps for visualization:
+      
+      // Comparing two elements
+      yield { type: 'compare', indices: [i, j] };
+      
+      // Swapping two elements (must also swap in arr)
+      [arr[i], arr[j]] = [arr[j]!, arr[i]!];
+      yield { type: 'swap', indices: [i, j] };
+      
+      // Marking pivot (for divide-and-conquer)
+      yield { type: 'pivot', indices: [pivotIndex] };
+      
+      // Marking elements as sorted
+      yield { type: 'sorted', indices: [i, j, k] };
+      
+      // Merge step (for merge sort variants)
+      arr[targetIndex] = value;
+      yield { type: 'merge', indices: [targetIndex], value };
+    }
+    ```
+    
+    <Note>
+      Study existing algorithms like `bubble.ts` or `quick.ts` to understand the pattern. Make sure to mutate the `arr` parameter in-place when swapping or merging.
+    </Note>
+  </Step>
+  
+  <Step title="Export the algorithm">
+    Add your algorithm to `src/lib/algorithms/index.ts`:
+    
+    ```typescript
+    export { bubbleSort } from './bubble';
+    export { quickSort } from './quick';
+    export { mergeSort } from './merge';
+    export { heapSort } from './heap';
+    export { insertionSort } from './insertion';
+    export { selectionSort } from './selection';
+    export { radixSort } from './radix'; // Add this line
+    ```
+  </Step>
+  
+  <Step title="Add algorithm metadata">
+    Update `src/lib/config/algorithms.ts` to include your algorithm's metadata:
+    
+    ```typescript
+    import type { AlgorithmInfo } from '$types/algorithm';
+    
+    export const algorithmMetadata: AlgorithmInfo[] = [
+      // ... existing algorithms ...
+      {
+        id: 'radix',
+        name: 'Radix Sort',
+        minTimeComplexity: 'O(d·n)',
+        maxTimeComplexity: 'O(d·n)',
+        spaceComplexity: 'O(n + k)',
+        stable: true,
+        description: 'Sorts by processing digits from least to most significant.'
+      }
+    ];
+    ```
+  </Step>
+  
+  <Step title="Update TypeScript types">
+    Add your algorithm ID to the type definition in `src/lib/types/algorithm.ts`:
+    
+    ```typescript
+    export type AlgorithmId = 
+      | 'bubble' 
+      | 'quick' 
+      | 'merge' 
+      | 'heap' 
+      | 'insertion' 
+      | 'selection'
+      | 'radix'; // Add this
+    ```
+  </Step>
+  
+  <Step title="Register in the visualizer">
+    Add your algorithm to the `ALGORITHMS` registry and validation set in `src/lib/store/visualizer.svelte.ts`:
+    
+    ```typescript
+    import {
+      bubbleSort,
+      quickSort,
+      mergeSort,
+      heapSort,
+      insertionSort,
+      selectionSort,
+      radixSort // Add import
+    } from '$lib/algorithms';
+    
+    const VALID_ALGORITHM_IDS = new Set<AlgorithmId>([
+      'bubble',
+      'quick',
+      'merge',
+      'heap',
+      'insertion',
+      'selection',
+      'radix' // Add this
+    ]);
+    
+    const ALGORITHMS: Record<AlgorithmId, (arr: Uint8Array) => Generator<SortStep, void, undefined>> = {
+      bubble: bubbleSort,
+      quick: quickSort,
+      merge: mergeSort,
+      heap: heapSort,
+      insertion: insertionSort,
+      selection: selectionSort,
+      radix: radixSort // Add this
+    };
+    ```
+  </Step>
+  
+  <Step title="Test your algorithm">
+    Run the development server and test your algorithm:
+    
+    ```bash
+    bun run dev
+    ```
+    
+    1. Open `http://localhost:5173`
+    2. Select your new algorithm from the dropdown
+    3. Verify the visualization works correctly
+    4. Check that comparisons and swaps are counted accurately
+    5. Test at different speeds and array sizes
+  </Step>
+</Steps>
+
+## Best practices
+
+When contributing to Sortvis, follow these guidelines:
+
+### Algorithm implementation
+
+- Use `Uint8Array` parameter type (not `number[]`)
+- Yield appropriate step types for visualization clarity
+- Mutate the array in-place for swaps and merges
+- Mark elements as `sorted` when they reach their final position
+- Keep algorithm logic separate from visualization concerns
+
+### Code style
+
+- Run `bun run format` before committing
+- Ensure `bun run lint` passes without errors
+- Use TypeScript strict mode (no `any` types)
+- Follow existing naming conventions
+- Add JSDoc comments for complex logic
+
+### Performance considerations
+
+- Avoid creating new objects in hot loops
+- Use `Uint8Array` for numeric data when possible
+- Minimize DOM manipulation in components
+- Profile performance with large array sizes (512 elements)
+
+### Testing
+
+- Test algorithms with various array sizes (10, 64, 256, 512)
+- Verify correctness: array should be sorted at completion
+- Check edge cases: already sorted, reverse sorted, duplicates
+- Test at all speed levels (snail to flash)
+- Ensure responsive layout works on mobile and desktop
+
+## Common issues
+
+### TypeScript errors
+
+If you encounter type errors:
+
+```bash
+bun run check
+```
+
+This will show detailed type errors with file locations.
+
+### Import path issues
+
+Use path aliases instead of relative imports:
+
+```typescript
+// Good
+import { visualizer } from '$store';
+import type { SortStep } from '$types/algorithm';
+
+// Avoid
+import { visualizer } from '../../store';
+import type { SortStep } from '../types/algorithm';
+```
+
+### Build failures
+
+Clear the build cache and rebuild:
+
+```bash
+rm -rf .svelte-kit
+bun run build
+```
+
+## Resources
+
+- [Svelte 5 Documentation](https://svelte.dev/docs/svelte/overview)
+- [SvelteKit Documentation](https://kit.svelte.dev/docs)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [shadcn-svelte Components](https://www.shadcn-svelte.com/)
+
+For questions or support, open an issue on the [GitHub repository](https://github.com/qonTesq/sortvis).

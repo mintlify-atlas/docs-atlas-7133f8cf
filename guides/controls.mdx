@@ -1,0 +1,321 @@
+---
+title: Controls
+description: Master the playback controls, settings, and VisualizerState API in Sortvis
+---
+
+Sortvis provides intuitive controls for customizing and controlling the sorting visualization. All interactive elements are accessible through both the UI and the underlying `VisualizerState` API.
+
+## Playback controls
+
+The main playback controls are centered in the footer and include three primary actions:
+
+### Play / Pause
+
+Toggle the sorting animation on and off. The button dynamically switches between play and pause icons based on the current state.
+
+```svelte src/lib/components/layout/footer/PlaybackControls.svelte:17-34
+<Button
+  class="relative size-14 rounded-2xl bg-foreground text-background hover:bg-foreground/90 sm:size-12"
+  onclick={() => (visualizer.status === 'playing' ? visualizer.pause() : visualizer.play())}
+  aria-label={visualizer.status === 'playing' ? 'Pause animation' : 'Play animation'}
+>
+  <Pause
+    class="size-5.5 transition-all! sm:size-4.5 {visualizer.status === 'playing'
+      ? 'scale-100 opacity-100'
+      : 'scale-75 opacity-0'}"
+    fill="currentColor"
+  />
+  <Play
+    class="absolute size-5.5 transition-all! sm:size-4.5 {visualizer.status === 'playing'
+      ? 'scale-75 opacity-0'
+      : 'scale-100 opacity-100'}"
+    fill="currentColor"
+  />
+</Button>
+```
+
+**API methods:**
+
+```typescript
+visualizer.play();  // Start or resume the animation
+visualizer.pause(); // Pause the animation
+```
+
+<Info>
+  When you call `play()` on a finished sort, the visualizer automatically resets metrics and starts fresh. If you call it while paused, it resumes from where it left off.
+</Info>
+
+### Reset
+
+Restore the array to its initial unsorted state (from before the current sort began):
+
+```svelte src/lib/components/layout/footer/PlaybackControls.svelte:7-15
+<Button
+  variant="ghost"
+  class="size-11 rounded-full text-muted-foreground hover:text-foreground sm:size-10"
+  onclick={() => visualizer.reset()}
+  disabled={visualizer.status === 'playing'}
+  aria-label="Reset array"
+>
+  <RotateCcw class="size-4.5 sm:size-4" />
+</Button>
+```
+
+**API method:**
+
+```typescript
+visualizer.reset(); // Restore to initial array, reset stats and colors
+```
+
+<Note>
+  Reset is disabled while the animation is playing. You must pause first to reset.
+</Note>
+
+### Shuffle (Generate Array)
+
+Generate a completely new random array:
+
+```svelte src/lib/components/layout/footer/PlaybackControls.svelte:36-44
+<Button
+  variant="ghost"
+  class="size-11 rounded-full text-muted-foreground hover:text-foreground sm:size-10"
+  onclick={() => visualizer.generateArray()}
+  disabled={visualizer.status === 'playing'}
+  aria-label="Shuffle array"
+>
+  <Shuffle class="size-4.5 sm:size-4" />
+</Button>
+```
+
+**API method:**
+
+```typescript
+visualizer.generateArray(); // Generate new random array with current size
+```
+
+The `generateArray()` method creates an array where each element is a random value between 5 and 104:
+
+```typescript src/lib/store/visualizer.svelte.ts:106-113
+generateArray() {
+  this.pause();
+  const arr = new Uint8Array(this.#size);
+  for (let i = 0; i < this.#size; i++) arr[i] = (Math.random() * 100 + 5) | 0;
+  this.array = arr;
+  this.initialArray = arr.slice();
+  this.resetMetrics();
+}
+```
+
+## Algorithm selection
+
+Choose from six different sorting algorithms using the algorithm selector:
+
+```typescript src/lib/components/layout/footer/AlgoSelector.svelte:21-24
+const handleSelect = (value: string) => {
+  visualizer.setAlgorithm(value);
+  open = false;
+};
+```
+
+**Available algorithms:**
+
+- `bubble` - Bubble Sort
+- `quick` - Quick Sort  
+- `merge` - Merge Sort
+- `heap` - Heap Sort
+- `insertion` - Insertion Sort
+- `selection` - Selection Sort
+
+**API method:**
+
+```typescript
+visualizer.setAlgorithm('quick'); // Switch to Quick Sort
+```
+
+<Warning>
+  Changing the algorithm automatically resets the array to its initial unsorted state. Any in-progress sort will be stopped.
+</Warning>
+
+## Speed controls
+
+Adjust the animation speed using the speed slider. Sortvis offers six discrete speed levels:
+
+```typescript src/lib/types/visualizer.ts:34
+export type SpeedLevel = 'snail' | 'slow' | 'med' | 'fast' | 'rapid' | 'flash';
+```
+
+### Speed configuration
+
+Each speed level is configured with specific delay and batch parameters:
+
+```typescript src/lib/store/visualizer.svelte.ts:36-43
+const SPEED_CONFIG: Record<SpeedLevel, { delay: number; batch: number }> = {
+  snail: { delay: 500, batch: 1 },
+  slow: { delay: 100, batch: 1 },
+  med: { delay: 10, batch: 1 },
+  fast: { delay: 0, batch: 1 },
+  rapid: { delay: 0, batch: 5 },
+  flash: { delay: 0, batch: 100 }
+};
+```
+
+<Steps>
+  <Step title="Snail (500ms delay)">
+    Processes 1 step every 500ms. Perfect for educational purposes and understanding each operation.
+  </Step>
+  
+  <Step title="Slow (100ms delay)">
+    Processes 1 step every 100ms. Good for following the algorithm logic.
+  </Step>
+  
+  <Step title="Med (10ms delay)">
+    Processes 1 step every 10ms. Default speed that balances visibility and performance.
+  </Step>
+  
+  <Step title="Fast (0ms delay)">
+    Processes 1 step per frame with no artificial delay. Limited only by `requestAnimationFrame`.
+  </Step>
+  
+  <Step title="Rapid (0ms delay, 5 steps/batch)">
+    Processes 5 steps per frame. Significantly faster than "fast" mode.
+  </Step>
+  
+  <Step title="Flash (0ms delay, 100 steps/batch)">
+    Processes 100 steps per frame. Nearly instantaneous for small to medium arrays.
+  </Step>
+</Steps>
+
+**API method:**
+
+```typescript
+visualizer.setSpeed('rapid'); // Set to rapid speed
+```
+
+<Info>
+  Unlike other settings, changing speed does not reset or pause the animation. You can adjust speed in real-time while the sort is running.
+</Info>
+
+## Array size adjustment
+
+Control the number of elements in the array from 10 to 512:
+
+```svelte src/lib/components/layout/footer/DesktopFooter.svelte:19-31
+<span class="shrink-0">Size</span>
+<Slider
+  type="single"
+  value={visualizer.size}
+  min={10}
+  max={512}
+  step={1}
+  onValueChange={(v: number) => visualizer.setSize(v)}
+  class="min-w-0 flex-1"
+  aria-label="Array Size"
+/>
+<span class="shrink-0 text-foreground tabular-nums">{visualizer.size}</span>
+```
+
+**API method:**
+
+```typescript
+visualizer.setSize(256); // Set array size to 256 elements
+```
+
+The size is clamped to the valid range:
+
+```typescript src/lib/store/visualizer.svelte.ts:140-145
+setSize(newSize: number) {
+  const clamped = Math.min(SIZE_MAX, Math.max(SIZE_MIN, Math.round(newSize)));
+  if (this.#size === clamped) return;
+  this.#size = clamped;
+  this.generateArray();
+}
+```
+
+<Warning>
+  Changing the array size automatically generates a new random array. This will stop any in-progress sort.
+</Warning>
+
+## VisualizerState API reference
+
+The `VisualizerState` class is the core of Sortvis. It manages all state and provides methods to control the visualization.
+
+### Public properties
+
+```typescript
+// Reactive state
+visualizer.status: 'idle' | 'playing' | 'paused' | 'finished'
+visualizer.size: number          // Current array size (10-512)
+visualizer.speed: SpeedLevel     // Current speed setting
+visualizer.algorithmId: AlgorithmId // Current algorithm
+
+// Array data (Uint8Array for performance)
+visualizer.array: Uint8Array     // Current array values
+visualizer.colors: Uint8Array    // Current bar color states
+visualizer.tick: number          // Increments on each update (triggers re-render)
+
+// Statistics
+visualizer.stats: SortStatistics // { comparisons: number, swaps: number }
+
+// Derived metadata
+visualizer.currentAlgorithmMetadata: AlgorithmInfo
+```
+
+### Public methods
+
+<CodeGroup>
+
+```typescript Playback
+// Start or resume sorting
+visualizer.play(): void
+
+// Pause the animation
+visualizer.pause(): void
+
+// Reset to initial unsorted array
+visualizer.reset(): void
+```
+
+```typescript Configuration
+// Set the sorting algorithm
+visualizer.setAlgorithm(id: AlgorithmId): void
+
+// Set array size (10-512)
+visualizer.setSize(newSize: number): void
+
+// Set animation speed
+visualizer.setSpeed(newSpeed: SpeedLevel): void
+```
+
+```typescript Array Generation
+// Generate new random array
+visualizer.generateArray(): void
+```
+
+</CodeGroup>
+
+### Usage example
+
+Here's how you might use the API to create a custom control:
+
+```typescript
+import { visualizer } from '$lib/store/visualizer.svelte';
+
+// Set up a specific scenario
+visualizer.setAlgorithm('quick');
+visualizer.setSize(100);
+visualizer.setSpeed('rapid');
+visualizer.generateArray();
+
+// Start the animation
+visualizer.play();
+
+// Check status
+if (visualizer.status === 'finished') {
+  console.log(`Comparisons: ${visualizer.stats.comparisons}`);
+  console.log(`Swaps: ${visualizer.stats.swaps}`);
+}
+```
+
+<Note>
+  The `visualizer` instance is a singleton exported from the store module. All components in the app share this same instance, ensuring consistent state across the UI.
+</Note>

@@ -1,0 +1,215 @@
+---
+title: Quick sort
+description: Efficient divide-and-conquer algorithm using partitioning around a pivot
+---
+
+Quick sort is a highly efficient divide-and-conquer sorting algorithm. It works by selecting a pivot element and partitioning the array so that elements smaller than the pivot come before it, and elements larger come after it. The process is then recursively applied to the sub-arrays.
+
+## How it works
+
+1. **Choose a pivot** - Select a pivot element using the median-of-three method
+2. **Partition** - Rearrange the array so elements less than the pivot are on the left, and greater elements are on the right
+3. **Recursively sort** - Apply quick sort to the left and right partitions
+4. **Optimize** - Always recurse on the smaller partition first to minimize stack depth
+
+<Note>
+  This implementation uses the median-of-three pivot selection to avoid worst-case O(n²) behavior on already-sorted arrays.
+</Note>
+
+## Complexity
+
+<CardGroup cols={3}>
+  <Card title="Best case" icon="gauge-high">
+    **O(n log n)**
+    
+    When partitions are balanced
+  </Card>
+  
+  <Card title="Worst case" icon="gauge-low">
+    **O(n²)**
+    
+    When pivots are poorly chosen
+  </Card>
+  
+  <Card title="Space" icon="memory">
+    **O(log n)**
+    
+    Recursion stack space
+  </Card>
+</CardGroup>
+
+**Stability:** No - equal elements may be reordered during partitioning
+
+## Implementation
+
+The implementation consists of three key functions:
+
+### Main function
+```typescript
+export function* quickSort(arr: Uint8Array): Generator<SortStep, void, undefined> {
+  if (arr.length <= 1) return;
+  yield* quickSortHelper(arr, 0, arr.length - 1);
+}
+```
+
+### Median-of-three pivot selection
+```typescript
+function* medianOfThree(
+  arr: Uint8Array,
+  low: number,
+  high: number
+): Generator<SortStep, void, undefined> {
+  const mid = (low + high) >> 1;
+
+  yield { type: 'compare', indices: [low, mid] };
+  if (arr[low]! > arr[mid]!) {
+    [arr[low], arr[mid]] = [arr[mid]!, arr[low]!];
+    yield { type: 'swap', indices: [low, mid] };
+  }
+
+  yield { type: 'compare', indices: [low, high] };
+  if (arr[low]! > arr[high]!) {
+    [arr[low], arr[high]] = [arr[high]!, arr[low]!];
+    yield { type: 'swap', indices: [low, high] };
+  }
+
+  yield { type: 'compare', indices: [mid, high] };
+  if (arr[mid]! > arr[high]!) {
+    [arr[mid], arr[high]] = [arr[high]!, arr[mid]!];
+    yield { type: 'swap', indices: [mid, high] };
+  }
+
+  yield { type: 'pivot', indices: [mid] };
+}
+```
+
+### Hoare partition scheme
+```typescript
+function* partition(
+  arr: Uint8Array,
+  low: number,
+  high: number
+): Generator<SortStep, number, undefined> {
+  const mid = (low + high) >> 1;
+  const pivot = arr[mid]!;
+
+  let i = low - 1;
+  let j = high + 1;
+
+  while (true) {
+    do {
+      i++;
+      yield { type: 'compare', indices: [i, mid] };
+    } while (arr[i]! < pivot);
+
+    do {
+      j--;
+      yield { type: 'compare', indices: [j, mid] };
+    } while (arr[j]! > pivot);
+
+    if (i >= j) return j;
+
+    [arr[i], arr[j]] = [arr[j]!, arr[i]!];
+    yield { type: 'swap', indices: [i, j] };
+  }
+}
+```
+
+### Recursive helper
+```typescript
+function* quickSortHelper(
+  arr: Uint8Array,
+  low: number,
+  high: number
+): Generator<SortStep, void, undefined> {
+  while (low < high) {
+    if (high - low === 1) {
+      yield { type: 'compare', indices: [low, high] };
+      if (arr[low]! > arr[high]!) {
+        [arr[low], arr[high]] = [arr[high]!, arr[low]!];
+        yield { type: 'swap', indices: [low, high] };
+      }
+      yield { type: 'sorted', indices: [low, high] };
+      break;
+    }
+
+    yield* medianOfThree(arr, low, high);
+    const p = yield* partition(arr, low, high);
+
+    if (p - low < high - p) {
+      yield* quickSortHelper(arr, low, p);
+      low = p + 1;
+    } else {
+      yield* quickSortHelper(arr, p + 1, high);
+      high = p;
+    }
+  }
+
+  if (low === high) yield { type: 'sorted', indices: [low] };
+}
+```
+
+## Visualization steps
+
+Quick sort uses four types of visualization steps:
+
+### Compare
+```typescript
+{ type: 'compare', indices: [i, j] }
+```
+Highlights elements being compared during partitioning or median-of-three.
+
+### Swap
+```typescript
+{ type: 'swap', indices: [i, j] }
+```
+Exchanges elements during partitioning or pivot selection.
+
+### Pivot
+```typescript
+{ type: 'pivot', indices: [mid] }
+```
+Marks the chosen pivot element.
+
+### Sorted
+```typescript
+{ type: 'sorted', indices: [low, high] }
+```
+Marks elements in their final position.
+
+## Key features
+
+<AccordionGroup>
+  <Accordion title="Median-of-three pivot selection">
+    Instead of always choosing the first, last, or middle element as the pivot, this implementation uses the median of three elements (low, mid, high). This significantly reduces the likelihood of worst-case O(n²) behavior on sorted or nearly-sorted arrays.
+  </Accordion>
+  
+  <Accordion title="Hoare partition scheme">
+    The implementation uses Hoare's partitioning scheme, which is more efficient than Lomuto's scheme as it performs fewer swaps on average. Two pointers move towards each other, swapping out-of-place elements.
+  </Accordion>
+  
+  <Accordion title="Tail call optimization">
+    The recursive helper uses a while loop and only recurses on the smaller partition. The larger partition is handled iteratively, reducing the maximum recursion depth from O(n) to O(log n).
+  </Accordion>
+  
+  <Accordion title="Small partition handling">
+    When a partition has only two elements, they're directly compared and swapped if needed, avoiding unnecessary recursion.
+  </Accordion>
+</AccordionGroup>
+
+## When to use
+
+<Check>
+  Quick sort is excellent for:
+  - General-purpose sorting
+  - Large datasets where O(n log n) average case is needed
+  - When minimal extra space is required
+  - Cache-friendly sorting (good locality of reference)
+</Check>
+
+<Warning>
+  Avoid quick sort when:
+  - Stability is required (use merge sort instead)
+  - Worst-case O(n log n) is guaranteed (use heap sort or merge sort)
+  - Working with linked lists (merge sort is better)
+</Warning>
